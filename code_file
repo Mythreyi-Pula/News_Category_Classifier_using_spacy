@@ -1,0 +1,114 @@
+!python -m spacy download en_core_web_lg
+import pandas as pd
+import spacy
+nlp=spacy.load("en_core_web_lg")
+
+
+df=pd.read_csv("news_data.csv")
+
+df.shape
+
+
+df.head(20)
+
+
+Preprocessing the text
+
+def preprocess(text):
+    doc = nlp(text)
+    filtered_tokens = []
+    for token in doc:
+        if token.is_stop or token.is_punct:
+            continue
+        filtered_tokens.append(token.lemma_)
+    return ' '.join(filtered_tokens)
+
+df['preprocessed_text']=df["STORY"].apply(preprocess)
+
+df.head()
+
+Getting the spacy embeddings for each preprocessed text
+
+df["vector"]=df['preprocessed_text'].apply(lambda x: nlp(x).vector)
+
+df.head()
+
+Train-Test splitting
+
+
+from sklearn.model_selection import train_test_split
+x_train,x_test,y_train,y_test=train_test_split(df.vector,df.SECTION,test_size=0.2,random_state=2022)
+
+x_train.shape
+
+x_test.shape
+
+Reshaping the X_train and X_test so as to be fit for models
+
+import numpy as np
+x_train_2d=np.stack(x_train)
+x_test_2d=np.stack(x_test)
+
+x_train_2d
+
+x_test_2d
+
+Using spacy glove embeddings for text vectorization and Decision Tree as the classifier.
+
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import classification_report
+clf=DecisionTreeClassifier()
+clf.fit(x_train_2d,y_train)
+y_pred1=clf.predict(x_test_2d)
+print(classification_report(y_test,y_pred1))
+
+Using spacy glove embeddings for text vectorization and  MultinomialNB as the classifier after applying the MinMaxscaler.
+
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.preprocessing import MinMaxScaler
+scaler=MinMaxScaler()
+scaled_train_embed=scaler.fit_transform(x_train_2d)
+scaled_test_embed=scaler.fit_transform(x_test_2d)
+clf=MultinomialNB()
+clf.fit(scaled_train_embed,y_train)
+y_pred2=clf.predict(scaled_test_embed)
+print(classification_report(y_test,y_pred2))
+
+Using spacy glove embeddings for text vectorization and KNeighborsClassifier as the classifier after applying the MinMaxscaler.
+
+from sklearn.neighbors import KNeighborsClassifier
+clf=KNeighborsClassifier(n_neighbors=5,metric='euclidean')
+clf.fit(scaled_train_embed,y_train)
+y_pred3=clf.predict(scaled_test_embed)
+print(classification_report(y_test,y_pred3))
+
+Using spacy glove embeddings for text vectorization and RandomForestClassifier as the classifier after applying the MinMaxscaler.
+
+from sklearn.ensemble import RandomForestClassifier
+clf=RandomForestClassifier()
+clf.fit(scaled_train_embed,y_train)
+y_pred4=clf.predict(scaled_test_embed)
+print(classification_report(y_test,y_pred4))
+
+Using spacy glove embeddings for text vectorization and  GradientBoostingClassifier as the classifier after applying the MinMaxscaler.
+
+from sklearn.ensemble import GradientBoostingClassifier
+clf=GradientBoostingClassifier()
+clf.fit(scaled_train_embed,y_train)
+y_pred5=clf.predict(scaled_test_embed)
+print(classification_report(y_test,y_pred5))
+
+Printing the confusion Matrix with the best model got
+
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
+c=confusion_matrix(y_test,y_pred3)
+sns.heatmap(c,annot=True,fmt='g')
+plt.xlabel('prediction')
+plt.ylabel('actual')
+plt.title('confision matrix')
+plt.show()
+
+
+
