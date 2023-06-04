@@ -1,3 +1,4 @@
+#News category classifier using nlp models
 **Text Classification**
 
 Text classification datasets are used to categorize natural language texts according to content. For example, think classifying news articles by topic, or classifying book reviews based on a positive or negative response. Text classification is also helpful for language detection, organizing customer feedback, and fraud detection.
